@@ -1,0 +1,164 @@
+---
+title: "Practical Machine Learning - Final Project - Jim D'Souza"
+output:
+  html_document:
+    toc: true
+    theme: united
+---
+
+## Import relevant libraries
+
+```{r}
+library(caret)
+library(AppliedPredictiveModeling)
+library(lubridate)
+```
+
+## Import the training and testing data sets
+
+```{r}
+df_train <- read.csv(file="C:/Users/Marketelligent/Downloads/pml-training.csv", header=TRUE, sep=",")
+df_test <- read.csv(file="C:/Users/Marketelligent/Downloads/pml-testing.csv", header=TRUE, sep=",")
+```
+
+## Pre-processing
+
+1. Removing new_window = yes - this is done because test set has only "no" values
+
+```{r}
+df_train1 <- df_train[df_train$new_window == "no",]
+df_test1  <- df_test
+```
+
+2. Creating an hour field - exercise pattern could vary by hour of day
+
+```{r}
+df_train1$hour <- as.numeric(substr(df_train1$cvtd_timestamp, 12,13))
+df_test1$hour <- as.numeric(substr(df_test1$cvtd_timestamp, 12,13))
+```
+
+3. Creating dummy variables for each of the Users
+
+```{r}
+
+df_train1$adelmo   <- 0
+df_train1$carlitos <- 0
+df_train1$charles  <- 0
+df_train1$eurico   <- 0
+df_train1$jeremy   <- 0
+df_train1$pedro    <- 0
+
+df_train1$adelmo[df_train1$user_name == "adelmo"]     <- 1
+df_train1$carlitos[df_train1$user_name == "carlitos"] <- 1
+df_train1$charles[df_train1$user_name == "charles"]   <- 1
+df_train1$eurico[df_train1$user_name == "eurico"]     <- 1
+df_train1$jeremy[df_train1$user_name == "jeremy"]     <- 1
+df_train1$pedro[df_train1$user_name == "pedro"]       <- 1
+
+
+df_test1$adelmo   <- 0
+df_test1$carlitos <- 0
+df_test1$charles  <- 0
+df_test1$eurico   <- 0
+df_test1$jeremy   <- 0
+df_test1$pedro    <- 0
+
+df_test1$adelmo[df_test1$user_name == "adelmo"]     <- 1
+df_test1$carlitos[df_test1$user_name == "carlitos"] <- 1
+df_test1$charles[df_test1$user_name == "charles"]   <- 1
+df_test1$eurico[df_test1$user_name == "eurico"]     <- 1
+df_test1$jeremy[df_test1$user_name == "jeremy"]     <- 1
+df_test1$pedro[df_test1$user_name == "pedro"]       <- 1
+```
+
+4. Removing first 5 columns - these are ID, name or date columns
+
+```{r}
+df_train1 <- df_train1[,6:167]
+df_test1 <- df_test1[,6:167]
+```
+
+5. Removing columns that only have NA values
+
+```{r}
+non_NA <- apply(!is.na(df_train1),2,sum)>0
+df_train1  <- df_train1[,non_NA]
+df_test1<-df_test1[,non_NA]
+```
+
+6. Removing columns that only have blank values
+
+```{r}
+df_test1  <- df_test1[, colSums(df_train1 != "") != 0]
+df_train1 <- df_train1[, colSums(df_train1 != "") != 0]
+```
+
+
+
+## Splitting into training, testing and validation data sets
+
+1. Formatting the original testing data set
+
+```{r}
+test_id      <- df_test1$problem_id
+test_feature <- df_test1[,names(df_test1)!="problem_id"]
+```
+
+2. Splitting the original training data set into training and validation
+
+```{r}
+set.seed(500)
+df_train2 <- df_train1[sample(nrow(df_train1)),]
+
+train_rows      <- createDataPartition(y=df_train2$classe,p=0.8,list=FALSE)
+training_data   <- df_train2[train_rows,]
+
+validation_data <- df_train2[-train_rows,]
+```
+
+3. Factorize the output classe column
+
+```{r}
+training_data$classe <- factor(training_data$classe)
+```
+
+
+
+## Building a random forest
+
+1. Training the model on the train data set, and using k-fold cross validation to measure accuracy
+
+```{r}
+rf_model<-train(classe~.,data=as.data.frame(training_data),method="rf",metric="Accuracy",
+                trControl=trainControl(method="cv",number=4), ntree=20,
+                tuneLength=10)
+```
+
+2. Final validation on the validation data set - check if accuracy of validation set is same as the accuracy of the k-folds
+
+```{r}
+result_validation <- predict(rf_model,validation_data)
+table(result_validation,validation_data$classe)
+```
+
+3. Display the final model
+
+```{r}
+rf_model$finalModel
+```
+
+
+## Run the model on the test data set provided for the project
+
+1. Predict the test values and create a new data set with the ID column
+
+```{r}
+result_test <- predict(rf_model,test_feature)
+output      <- data.frame(test_id,result_test)
+```
+
+2. Write to csv output file
+
+```{r}
+write.csv(output, file = "C:/Users/Marketelligent/Downloads/pml-output.csv")
+```
