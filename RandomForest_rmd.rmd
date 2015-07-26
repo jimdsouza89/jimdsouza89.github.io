@@ -1,10 +1,23 @@
----
-title: "Practical Machine Learning - Final Project - Jim D'Souza"
-output:
-  html_document:
-    toc: true
-    theme: united
----
+
+# Practical Machine Learning - Final Project - Jim D'Souza
+
+The aim of this exercise is to predict the classe column, i.e., the manner in which the person performed the exercise.
+
+The pre-processing of data reduced the number of applicable variables to 61. This removed blank and NA variables,
+while introducing dummy variables for individual users, as well as a variable for the time of the day.
+
+I used Random Forests to build this model. I manually kept the number of trees as 20 (instead of the default 500),
+since I observed that the error rate does not drop after 17-18 trees.
+In addition, I used k-fold cross validation (k=4) to validate the training data set. 
+
+The out-of-sample, or validation error (0.5%) was approximately the same as the k-fold cross validation error rate (0.6%).
+This indicates that the model should perform with the same degree of accuracy with new exercise data.
+
+There is a degree of over-fitting with this data, due to the introduction of dummy variables for the users.
+Hence, if we try to classify data for people not present in the training data set, the performance of the model may vary.
+However, the purpose of this exercise was to predict the output for the test data set, which it achieved (correctly predicted all 20 values).
+
+
 
 ## Import relevant libraries
 
@@ -17,8 +30,8 @@ library(lubridate)
 ## Import the training and testing data sets
 
 ```{r}
-df_train <- read.csv(file="C:/Users/Marketelligent/Downloads/pml-training.csv", header=TRUE, sep=",")
-df_test <- read.csv(file="C:/Users/Marketelligent/Downloads/pml-testing.csv", header=TRUE, sep=",")
+df_train <- read.csv(file="D:/Coursera/Practical Machine Learning/pml-training.csv", header=TRUE, sep=",")
+df_test  <- read.csv(file="D:/Coursera/Practical Machine Learning/pml-testing.csv",  header=TRUE, sep=",")
 ```
 
 ## Pre-processing
@@ -160,5 +173,5 @@ output      <- data.frame(test_id,result_test)
 2. Write to csv output file
 
 ```{r}
-write.csv(output, file = "C:/Users/Marketelligent/Downloads/pml-output.csv")
+write.csv(output, file = "D:/Coursera/Practical Machine Learning/pml-output.csv")
 ```
